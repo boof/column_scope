@@ -1,3 +1,10 @@
 require "#{ File.dirname __FILE__ }/lib/column_scope"
-ActiveRecord::NamedScope::Scope.instance_eval { include ColumnScope::ScopeMethods }
-ActiveRecord::Base.instance_eval { extend ColumnScope::ScopeMethods }
+ActiveRecord::NamedScope::Scope.class_eval do
+  include ColumnScope::ScopeMethods
+end
+ActiveRecord::Base.class_eval do
+  extend ColumnScope::ScopeMethods
+  def self.values
+    ColumnScope::ValueExtractor.new self, column_names
+  end
+end
