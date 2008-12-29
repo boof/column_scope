@@ -1,0 +1,26 @@
+= ColumnScope
+
+Selecting only specified rows can safe you resources and processing time.
+
+I wrote this plugin because I do this all the time and I don't want to cripple
+my code anymore.
+
+ColumnScope is build on top of NamedScope so it should work with Ruby on
+Rails 2.1+.
+
+== Examples:
+
+  Item.selects(:names).proxy_options[:select] # => '"items".name'
+
+  content = 'Foo Bar Baz'
+
+  Item.create :name => 'foo', :value => 1, :content => content
+  Item.create :name => 'bar', :value => 2, :content => content
+  Item.create :name => 'baz', :value => 3, :content => content
+
+  Item.selects(:names).scoped(:order => 'id').values # => %w[foo bar baz]
+  Item.select_first :distinct_content # => content
+
+See test/column_scope_test.rb for more examples.
+
+Copyright (c) 2008 Florian Aßmann, released under the MIT license
