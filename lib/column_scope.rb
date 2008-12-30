@@ -1,7 +1,16 @@
 # = ColumnScope
 #
 # To create a column scope invoke either <tt>selects</tt> or <tt>rejects</tt>
-# on a scope (which is either a model or a named scope).
+# on a scope (which is either a model or a named scope) with the column names
+# you want to select:
+#
+#   Item.selects :name, :value # => "items".name,"items".value
+#   Item.rejects :id, :content, :timestamps # => "items".name,"items".value
+#
+# To make the select <tt>DISTICT</tt> you must invoke <tt>uniq!</tt> on the
+# column scope.
+#
+#   Item.selects(:name).uniq! # => DISTINCT "items".name
 #
 # When you invoke <tt>find</tt> on a scope that is chained with a column scope
 # only the named columns are selected by SQL.
@@ -9,7 +18,7 @@
 # assigned.
 #
 # If you only want the plain values invoke <tt>values</tt> on a scope before
-# you invoke <tt>find</tt>.
+# you invoke <tt>all</tt>, <tt>first</tt> or <tt>last</tt>.
 #
 # == Shortcuts
 #
@@ -17,21 +26,25 @@
 # (or string) in the following format:
 #
 #   :name
-#   :names # => name
-#   :name_and_value # => name, value
+#   :name__value # => name, value
 #   :distinct_name # => DISTINCT name
+#   :name__timestamps # => name, created_at, updated_at
 class ColumnScope < ActiveRecord::NamedScope::Scope
 
   module ScopeMethods
 
-    def self.splat_timestamps!(column_names) #:nodoc:
-      if i = column_names.index('timestamps')
-        column_names.delete_at i
-        column_names << 'created_at'
-        column_names << 'updated_at'
+    def self.sanitize_names(names) #:nodoc:
+      i, names_sanitized = 0, []
+      while i < names.length
+        unless names[i].to_sym == :timestamps
+          names_sanitized << names[i].to_s
+        else
+          names_sanitized << 'created_at'
+          names_sanitized << 'updated_at'
+        end
+        i += 1
       end
-
-      column_names
+      names_sanitized
     end
 
     # Returns an instance of ValueExtractor with scope and column names.
@@ -49,8 +62,8 @@ class ColumnScope < ActiveRecord::NamedScope::Scope
     # To get the selected values invoke <tt>values</tt> on this scope before
     # you load the records with <tt>all</tt>, <tt>first</tt> or <tt>last</tt>.
     def selects(*selected_cns)
-      selected_cns = selected_cns.map {|cn|cn.to_s}
-      ColumnScope.new self, ScopeMethods.splat_timestamps!(selected_cns)
+      selected_cns = ScopeMethods.sanitize_names selected_cns
+      ColumnScope.new self, selected_cns
     end
     # Returns a ColumnScope w/o named columns.
     #
@@ -60,22 +73,20 @@ class ColumnScope < ActiveRecord::NamedScope::Scope
     # Note: The attribute order is the same as in <tt>column_names</tt> w/o
     # the named columns.
     def rejects(*rejected_cns)
-      rejected_cns = rejected_cns.map {|cn|cn.to_s}
-      ScopeMethods.splat_timestamps! rejected_cns
-
+      rejected_cns = ScopeMethods.sanitize_names rejected_cns
       ColumnScope.new self, column_names - rejected_cns
     end
 
-    def self.split_column_names(column_names) #:nodoc:
+    def self.split__column_names(column_names) #:nodoc:
       column_names  = "#{ column_names }"
-      column_names  = column_names.split('__').map! { |c| c.singularize }
+      column_names  = column_names.split('__')
       first_cn      = column_names.first
 
       distinct =  if first_cn[0, 9] == 'distinct_'
         first_cn.slice!(0, 9).gsub!('_', ' ').upcase
       end
 
-      return distinct, column_names
+      [ distinct, column_names ]
     end
 
     # This shortcut returns selected values of all records.
@@ -93,7 +104,7 @@ class ColumnScope < ActiveRecord::NamedScope::Scope
 
     protected
     def select_values(column_names) #:nodoc:
-      distinct, column_names = ScopeMethods.split_column_names column_names
+      distinct, column_names = ScopeMethods.split__column_names column_names
       scope = selects(*column_names)
       scope.uniq if distinct
 
@@ -155,6 +166,9 @@ class ColumnScope < ActiveRecord::NamedScope::Scope
     def last(options = {})
       record = @scope.last options
       @extracting[record] if record
+    end
+    def find(*args) #:nodoc:
+      raise NotImplementedError
     end
 
   end

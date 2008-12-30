@@ -10,7 +10,7 @@ Rails 2.1+.
 
 == Examples:
 
-  Item.selects(:names).proxy_options[:select] # => '"items".name'
+  Item.selects(:name).proxy_options[:select] # => '"items".name'
 
   content = 'Foo Bar Baz'
 
@@ -18,7 +18,7 @@ Rails 2.1+.
   Item.create :name => 'bar', :value => 2, :content => content
   Item.create :name => 'baz', :value => 3, :content => content
 
-  Item.selects(:names).values(:order => 'id').all # => %w[foo bar baz]
+  Item.selects(:name).values(:order => 'id').all # => %w[foo bar baz]
 
   # use a shortcut to retrieve values of name and content distinct
   Item.select_first :distinct_name__content # => ['foo', content]

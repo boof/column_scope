@@ -37,9 +37,9 @@ class ColumnScopeTest < ActiveSupport::TestCase
 #    assert Item.selects(:name_and_value).proxy_options[:select] == '"items"."name","items"."value"'
   end
 
-  test "verify all names are foo bar and baz" do
+  test "verify select only name results in an array with foo bar and baz" do
     expectation = %w[foo bar baz]
-    result1     = Item.select_all :names, :order => 'id'
+    result1     = Item.select_all :name, :order => 'id'
     result2     = Item.selects(:name).values.all :order => 'id'
 
     assert_equal expectation, result1
