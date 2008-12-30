@@ -18,7 +18,7 @@ Rails 2.1+.
   Item.create :name => 'bar', :value => 2, :content => content
   Item.create :name => 'baz', :value => 3, :content => content
 
-  Item.selects(:name).values(:order => 'id').all # => %w[foo bar baz]
+  Item.selects(:name).values.all :order => 'id' # => %w[foo bar baz]
 
   # use a shortcut to retrieve values of name and content distinct
   Item.select_first :distinct_name__content # => ['foo', content]
