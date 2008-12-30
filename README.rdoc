@@ -1,6 +1,6 @@
 = ColumnScope
 
-Selecting only specified rows can safe you resources and processing time.
+Selecting only specified columns can safe you resources and processing time.
 
 I wrote this plugin because I do this all the time and I don't want to cripple
 my code anymore.
