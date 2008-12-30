@@ -10,20 +10,28 @@
 #
 # If you only want the plain values invoke <tt>values</tt> on a scope before
 # you invoke <tt>find</tt>.
+#
+# == Shortcuts
+#
+# select_all, select_first and select_last are shortcuts. They accept a symbol
+# (or string) in the following format:
+#
+#   :name
+#   :names # => name
+#   :name_and_value # => name, value
+#   :distinct_name # => DISTINCT name
 class ColumnScope < ActiveRecord::NamedScope::Scope
 
   module ScopeMethods
 
-    def self.split_column_names(column_names) #:nodoc:
-      column_names  = "#{ column_names }"
-      column_names  = column_names.split('_and_').map! { |c| c.singularize }
-      first_cn      = column_names.first
-
-      distinct =  if first_cn[0, 9] == 'distinct_'
-        first_cn.slice!(0, 9).gsub!('_', ' ').upcase
+    def self.splat_timestamps!(column_names) #:nodoc:
+      if i = column_names.index('timestamps')
+        column_names.delete_at i
+        column_names << 'created_at'
+        column_names << 'updated_at'
       end
 
-      return distinct, column_names
+      column_names
     end
 
     # Returns an instance of ValueExtractor with scope and column names.
@@ -38,51 +46,79 @@ class ColumnScope < ActiveRecord::NamedScope::Scope
     end
     # Returns a ColumnScope with named columns.
     #
-    # To get the selected values invoke values on this scope before you load
-    # the records with :first, :last or :all.
-    def selects(selected_cns)
-      distinct, selected_cns = ScopeMethods.split_column_names selected_cns
-      ColumnScope.new self, selected_cns, distinct
+    # To get the selected values invoke <tt>values</tt> on this scope before
+    # you load the records with <tt>all</tt>, <tt>first</tt> or <tt>last</tt>.
+    def selects(*selected_cns)
+      selected_cns = selected_cns.map {|cn|cn.to_s}
+      ColumnScope.new self, ScopeMethods.splat_timestamps!(selected_cns)
     end
     # Returns a ColumnScope w/o named columns.
     #
-    # To get the remaining values invoke values on this scope before you load
-    # the records with :first, :last or :all.
+    # To get the selected values invoke <tt>values</tt> on this scope before
+    # you load the records with <tt>all</tt>, <tt>first</tt> or <tt>last</tt>.
     #
-    # Note: The attribute order is the same as in column_names w/o the names
-    # columns.
-    def rejects(rejected_cns)
-      distinct, rejected_cns = ScopeMethods.split_column_names rejected_cns
-      selected_cns = column_names.reject { |cn| rejected_cns.include? cn }
-      ColumnScope.new self, selected_cns, distinct
+    # Note: The attribute order is the same as in <tt>column_names</tt> w/o
+    # the named columns.
+    def rejects(*rejected_cns)
+      rejected_cns = rejected_cns.map {|cn|cn.to_s}
+      ScopeMethods.splat_timestamps! rejected_cns
+
+      ColumnScope.new self, column_names - rejected_cns
     end
+
+    def self.split_column_names(column_names) #:nodoc:
+      column_names  = "#{ column_names }"
+      column_names  = column_names.split('__').map! { |c| c.singularize }
+      first_cn      = column_names.first
+
+      distinct =  if first_cn[0, 9] == 'distinct_'
+        first_cn.slice!(0, 9).gsub!('_', ' ').upcase
+      end
+
+      return distinct, column_names
+    end
+
     # This shortcut returns selected values of all records.
     def select_all(column_names, options = {})
-      scope = selects column_names
-      scope.values.all options
+      select_values(column_names).all options
     end
     # This shortcut returns selected values of first record.
     def select_first(column_names, options = {})
-      scope = selects column_names
-      scope.values.first options
+      select_values(column_names).first options
     end
     # This shortcut returns selected values of last record.
     def select_last(column_names, options = {})
-      scope = selects column_names
-      scope.values.last options
+      select_values(column_names).last options
+    end
+
+    protected
+    def select_values(column_names) #:nodoc:
+      distinct, column_names = ScopeMethods.split_column_names column_names
+      scope = selects(*column_names)
+      scope.uniq if distinct
+
+      scope.values
     end
 
   end
 
-  def initialize(proxy_scope, column_names, distinct) #:nodoc:
+  def initialize(proxy_scope, column_names) #:nodoc:
     super(proxy_scope, {}) do
       define_method(:values) { ValueExtractor.new self, column_names }
     end
-    proxy_options[:select] = select_sql column_names, distinct
+    proxy_options[:select] = select_sql column_names
+  end
+
+  # Makes select DISTINCT and returns self.
+  def uniq!
+    proxy_options[:select][0, 9] == 'DISTINCT ' or
+    proxy_options[:select][0, 0] = 'DISTINCT '
+
+    self
   end
 
   protected
-  def select_sql(column_names, distinct) #:nodoc:
+  def select_sql(column_names) #:nodoc:
     base_class = proxy_scope
     while base_class.class == ActiveRecord::NamedScope::Scope
       base_class = base_class.proxy_scope
@@ -93,7 +129,7 @@ class ColumnScope < ActiveRecord::NamedScope::Scope
 # Quoting of column names when distinct brakes ARs orm'ing!
 #        map { |cn| "#{ qtn }.#{ con.quote_column_name cn }" }
 
-    "#{ distinct }#{ sanitized_column_names * ',' }"
+    "#{ sanitized_column_names * ',' }"
   end
 
   class ValueExtractor

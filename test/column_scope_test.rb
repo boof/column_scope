@@ -21,17 +21,18 @@ class ColumnScopeTest < ActiveSupport::TestCase
   include ColumnScopeTestHelper
 
   test "verify that items name column is selected" do
-    assert Item.selects(:names).proxy_options[:select] == '"items".name'
+    assert Item.selects(:name).proxy_options[:select] == '"items".name'
 # Quoting of column names when distinct brakes ARs orm'ing!
 #    assert Item.selects(:names).proxy_options[:select] == '"items"."name"'
   end
   test "verify that items name column is selected with distinct" do
-    assert Item.selects(:distinct_name).proxy_options[:select] == 'DISTINCT "items".name'
+    assert Item.selects(:name).uniq!.proxy_options[:select] == 'DISTINCT "items".name'
 # Quoting of column names when distinct brakes ARs orm'ing!
 #    assert Item.selects(:distinct_name).proxy_options[:select] == 'DISTINCT "items"."name"'
   end
-  test "verify that items name and items.value columns are selected" do
-    assert Item.selects(:name_and_value).proxy_options[:select] == '"items".name,"items".value'
+  test "verify that items name and items value columns are selected" do
+    assert Item.selects(:name, :value).proxy_options[:select] == '"items".name,"items".value'
+    assert Item.rejects(:id, :content, :timestamps).proxy_options[:select] == '"items".name,"items".value'
 # Quoting of column names when distinct brakes ARs orm'ing!
 #    assert Item.selects(:name_and_value).proxy_options[:select] == '"items"."name","items"."value"'
   end
@@ -39,7 +40,7 @@ class ColumnScopeTest < ActiveSupport::TestCase
   test "verify all names are foo bar and baz" do
     expectation = %w[foo bar baz]
     result1     = Item.select_all :names, :order => 'id'
-    result2     = Item.selects(:names).values.all :order => 'id'
+    result2     = Item.selects(:name).values.all :order => 'id'
 
     assert_equal expectation, result1
     assert_equal expectation, result2
@@ -47,7 +48,7 @@ class ColumnScopeTest < ActiveSupport::TestCase
   test "verify last value is 3" do
     expectation = 3
     result1     = Item.select_last :value, :order => 'id'
-    result2     = Item.selects(:values).values.last :order => 'id'
+    result2     = Item.selects(:value).values.last :order => 'id'
 
     assert_equal expectation, result1
     assert_equal expectation, result2
@@ -60,19 +61,22 @@ class ColumnScopeTest < ActiveSupport::TestCase
   end
   test "verify find returns 3 and baz" do
     expectation = ['baz', 3]
-    result1     = Item.with_name('baz').selects(:name_and_value).values.first
-    result2     = Item.with_name('baz').rejects(:content_and_id).values.first
+    result1     = Item.with_name('baz').selects(:name, :value).values.first
+    result2     = Item.with_name('baz').rejects(:content, :id, :timestamps).values.first
+    result3     = Item.with_name('baz').select_first(:name__value)
 
     assert_equal expectation, result1
     assert_equal expectation, result2
+    assert_equal expectation, result3
   end
-  test "verify values returns values" do
+  test "verify values returns values ordered" do
     expectation = [
       ['foo', 1, ColumnScopeTestHelper.content],
       ['bar', 2, ColumnScopeTestHelper.content],
       ['baz', 3, ColumnScopeTestHelper.content]
     ]
-    result = Item.values.all.each { |tuple| tuple.shift }
+    # select values and drop id and timestamps
+    result = Item.values.all.each { |tpl| tpl.shift; tpl.pop; tpl.pop }
 
     assert_equal expectation, result
   end

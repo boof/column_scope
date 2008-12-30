@@ -1,5 +1,5 @@
 ActiveRecord::Base.colorize_logging = false
-ActiveRecord::Base.logger = ActiveSupport::BufferedLogger.new STDOUT if $-v
+#ActiveRecord::Base.logger = ActiveSupport::BufferedLogger.new STDOUT
 
 ActiveRecord::Base.establish_connection(
  :adapter => 'sqlite3',
@@ -11,5 +11,6 @@ ActiveRecord::Base.connection.instance_eval do
     t.string :name
     t.integer :value
     t.text :content
+    t.timestamps
   end
 end
