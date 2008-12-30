@@ -136,9 +136,7 @@ class ColumnScope < ActiveRecord::NamedScope::Scope
     end
     con, qtn = base_class.connection, base_class.quoted_table_name
     sanitized_column_names = column_names.
-        map { |cn| "#{ qtn }.#{ cn }" }
-# Quoting of column names when distinct brakes ARs orm'ing!
-#        map { |cn| "#{ qtn }.#{ con.quote_column_name cn }" }
+        map { |cn| "#{ qtn }.#{ con.quote_column_name cn }" }
 
     "#{ sanitized_column_names * ',' }"
   end

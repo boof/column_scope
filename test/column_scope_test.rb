@@ -21,20 +21,14 @@ class ColumnScopeTest < ActiveSupport::TestCase
   include ColumnScopeTestHelper
 
   test "verify that items name column is selected" do
-    assert Item.selects(:name).proxy_options[:select] == '"items".name'
-# Quoting of column names when distinct brakes ARs orm'ing!
-#    assert Item.selects(:names).proxy_options[:select] == '"items"."name"'
+    assert Item.selects(:name).proxy_options[:select] == '"items"."name"'
   end
   test "verify that items name column is selected with distinct" do
-    assert Item.selects(:name).uniq!.proxy_options[:select] == 'DISTINCT "items".name'
-# Quoting of column names when distinct brakes ARs orm'ing!
-#    assert Item.selects(:distinct_name).proxy_options[:select] == 'DISTINCT "items"."name"'
+    assert Item.selects(:name).uniq!.proxy_options[:select] == 'DISTINCT "items"."name"'
   end
   test "verify that items name and items value columns are selected" do
-    assert Item.selects(:name, :value).proxy_options[:select] == '"items".name,"items".value'
-    assert Item.rejects(:id, :content, :timestamps).proxy_options[:select] == '"items".name,"items".value'
-# Quoting of column names when distinct brakes ARs orm'ing!
-#    assert Item.selects(:name_and_value).proxy_options[:select] == '"items"."name","items"."value"'
+    assert Item.selects(:name, :value).proxy_options[:select] == '"items"."name","items"."value"'
+    assert Item.rejects(:id, :content, :timestamps).proxy_options[:select] == '"items"."name","items"."value"'
   end
 
   test "verify select only name results in an array with foo bar and baz" do
