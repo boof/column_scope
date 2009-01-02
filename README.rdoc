@@ -24,7 +24,7 @@ Rails 2.1+.
   Item.select_first :distinct_name__content # => ['foo', content]
 
   # without shortcut
-  Item.selects(:name, :content).uniq!.values.all # => ['foo', content]
+  Item.selects(:name, :content).uniq!.values.first # => ['foo', content]
 
   # reject named columns in scope :a_named_scope and select only the values
   Item.a_named_scope.rejects(:content).values.all # => [[1, 'foo', 1], ...]
