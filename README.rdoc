@@ -5,12 +5,12 @@ Selecting only specified columns can safe you resources and processing time.
 I wrote this plugin because I do this all the time and I don't want to cripple
 my code anymore.
 
-ColumnScope is build on top of NamedScope so it should work with Ruby on
+ColumnScope is build on top of NamedScope so it only works with Ruby on
 Rails 2.1+.
 
 == Examples:
 
-  Item.selects(:name).proxy_options[:select] # => '"items".name'
+  Item.selects(:name).proxy_options[:select] # => '"items"."name"'
 
   content = 'Foo Bar Baz'
 
@@ -30,5 +30,13 @@ Rails 2.1+.
   Item.a_named_scope.rejects(:content).values.all # => [[1, 'foo', 1], ...]
 
 See test/column_scope_test.rb for more examples.
+
+== Install (rails):
+
+  $ script/plugin install git://github.com/boof/column_scope.git
+
+  # alternativly:
+  $ cd vendor/plugins
+  $ git clone git://github.com/boof/column_scope.git
 
 Copyright (c) 2008 Florian Aßmann, released under the MIT license

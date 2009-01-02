@@ -14,3 +14,5 @@ ActiveRecord::Base.connection.instance_eval do
     t.timestamps
   end
 end
+
+# ... maybe I should Stub a database Adapter?
